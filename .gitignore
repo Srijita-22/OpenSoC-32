@@ -1,0 +1,26 @@
+# Simulation outputs
+*.vcd
+*.vvp
+*.fst
+
+# Verilator outputs
+obj_dir/
+
+# Build files
+build/
+*.o
+*.out
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Logs
+*.log
+
+# Physical design generated files
+runs/
+*.def
+*.gds
+*.lef
