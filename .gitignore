@@ -22,3 +22,4 @@ runs/
 *.def
 *.gds
 *.lef
+results/
