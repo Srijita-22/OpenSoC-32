@@ -1,4 +1,4 @@
-
+`timescale 1ns/1ps
 module apb_interconnect #(
     parameter int ADDR_WIDTH = 12,
     parameter int DATA_WIDTH = 32
@@ -41,13 +41,24 @@ module apb_interconnect #(
     output logic [DATA_WIDTH-1:0] timer_pwdata,
     input  logic [DATA_WIDTH-1:0] timer_prdata,
     input  logic                  timer_pready,
-    input  logic                  timer_pslverr
+    input  logic                  timer_pslverr,
+
+    // SPI APB Slave interface
+    output logic                  spi_psel,
+    output logic                  spi_penable,
+    output logic                  spi_pwrite,
+    output logic [7:0]            spi_paddr,
+    output logic [DATA_WIDTH-1:0] spi_pwdata,
+    input  logic [DATA_WIDTH-1:0] spi_prdata,
+    input  logic                  spi_pready,
+    input  logic                  spi_pslverr
 );
 
     // Address regions
     localparam logic [3:0] GPIO_REGION  = 4'h0;
     localparam logic [3:0] UART_REGION  = 4'h1;
     localparam logic [3:0] TIMER_REGION = 4'h2;
+    localparam logic [3:0] SPI_REGION   = 4'h3;
 
     // Internal address decode
     logic [3:0] address_region;
@@ -59,6 +70,7 @@ module apb_interconnect #(
         gpio_psel  = 1'b0;
         uart_psel  = 1'b0;
         timer_psel = 1'b0;
+        spi_psel   = 1'b0;
 
         if (m_psel) begin
             case (address_region)
@@ -71,6 +83,9 @@ module apb_interconnect #(
                 TIMER_REGION:
                     timer_psel = 1'b1;
 
+                SPI_REGION:
+                    spi_psel = 1'b1;
+
                 default: begin
                     // No peripheral selected
                 end
@@ -82,19 +97,23 @@ module apb_interconnect #(
     assign gpio_penable  = gpio_psel && m_penable;
     assign uart_penable  = uart_psel && m_penable;
     assign timer_penable = timer_psel && m_penable;
+    assign spi_penable   = spi_psel && m_penable;
 
     assign gpio_pwrite = gpio_psel && m_pwrite;
     assign uart_pwrite = uart_psel && m_pwrite;
     assign timer_pwrite = timer_psel && m_pwrite;
+    assign spi_pwrite = spi_psel && m_pwrite;
 
     // Forward local address and write data
     assign gpio_paddr  = m_paddr[7:0];
     assign uart_paddr  = m_paddr[7:0];
     assign timer_paddr = m_paddr[7:0];
+    assign spi_paddr   = m_paddr[7:0];
 
     assign gpio_pwdata  = m_pwdata;
     assign uart_pwdata  = m_pwdata;
     assign timer_pwdata = m_pwdata;
+    assign spi_pwdata   = m_pwdata;
 
     // Read data and response multiplexer
     always @(*) begin
@@ -123,7 +142,14 @@ module apb_interconnect #(
                     m_pslverr = timer_pslverr;
                 end
 
+                SPI_REGION: begin
+                    m_prdata  = spi_prdata;
+                    m_pready  = spi_pready;
+                    m_pslverr = spi_pslverr;
+                end
+
                 default: begin
+                    // Invalid address region
                     m_prdata  = '0;
                     m_pready  = 1'b1;
                     m_pslverr = 1'b1;

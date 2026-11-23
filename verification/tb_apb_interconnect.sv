@@ -3,7 +3,6 @@
 
 module tb_apb_interconnect;
 
-    // Parameters
     localparam int ADDR_WIDTH = 12;
     localparam int DATA_WIDTH = 32;
 
@@ -18,36 +17,30 @@ module tb_apb_interconnect;
     logic                  m_pslverr;
 
     // GPIO signals
-    logic                  gpio_psel;
-    logic                  gpio_penable;
-    logic                  gpio_pwrite;
+    logic                  gpio_psel, gpio_penable, gpio_pwrite;
     logic [7:0]            gpio_paddr;
-    logic [DATA_WIDTH-1:0] gpio_pwdata;
-    logic [DATA_WIDTH-1:0] gpio_prdata;
-    logic                  gpio_pready;
-    logic                  gpio_pslverr;
+    logic [DATA_WIDTH-1:0] gpio_pwdata, gpio_prdata;
+    logic                  gpio_pready, gpio_pslverr;
 
     // UART signals
-    logic                  uart_psel;
-    logic                  uart_penable;
-    logic                  uart_pwrite;
+    logic                  uart_psel, uart_penable, uart_pwrite;
     logic [7:0]            uart_paddr;
-    logic [DATA_WIDTH-1:0] uart_pwdata;
-    logic [DATA_WIDTH-1:0] uart_prdata;
-    logic                  uart_pready;
-    logic                  uart_pslverr;
+    logic [DATA_WIDTH-1:0] uart_pwdata, uart_prdata;
+    logic                  uart_pready, uart_pslverr;
 
     // Timer signals
-    logic                  timer_psel;
-    logic                  timer_penable;
-    logic                  timer_pwrite;
+    logic                  timer_psel, timer_penable, timer_pwrite;
     logic [7:0]            timer_paddr;
-    logic [DATA_WIDTH-1:0] timer_pwdata;
-    logic [DATA_WIDTH-1:0] timer_prdata;
-    logic                  timer_pready;
-    logic                  timer_pslverr;
+    logic [DATA_WIDTH-1:0] timer_pwdata, timer_prdata;
+    logic                  timer_pready, timer_pslverr;
 
-    // DUT instantiation
+    // SPI signals
+    logic                  spi_psel, spi_penable, spi_pwrite;
+    logic [7:0]            spi_paddr;
+    logic [DATA_WIDTH-1:0] spi_pwdata, spi_prdata;
+    logic                  spi_pready, spi_pslverr;
+
+    // DUT
     apb_interconnect #(
         .ADDR_WIDTH(ADDR_WIDTH),
         .DATA_WIDTH(DATA_WIDTH)
@@ -86,7 +79,16 @@ module tb_apb_interconnect;
         .timer_pwdata(timer_pwdata),
         .timer_prdata(timer_prdata),
         .timer_pready(timer_pready),
-        .timer_pslverr(timer_pslverr)
+        .timer_pslverr(timer_pslverr),
+
+        .spi_psel(spi_psel),
+        .spi_penable(spi_penable),
+        .spi_pwrite(spi_pwrite),
+        .spi_paddr(spi_paddr),
+        .spi_pwdata(spi_pwdata),
+        .spi_prdata(spi_prdata),
+        .spi_pready(spi_pready),
+        .spi_pslverr(spi_pslverr)
     );
 
     // VCD generation
@@ -95,30 +97,34 @@ module tb_apb_interconnect;
         $dumpvars(0, tb_apb_interconnect);
     end
 
-    // Initialize and run tests
     initial begin
 
-        // Initialize master signals
-        m_psel   = 1'b0;
+        // Initialize master
+        m_psel    = 1'b0;
         m_penable = 1'b0;
-        m_pwrite = 1'b0;
-        m_paddr  = '0;
-        m_pwdata = '0;
+        m_pwrite  = 1'b0;
+        m_paddr   = '0;
+        m_pwdata  = '0;
 
         // Initialize GPIO response
-        gpio_prdata = 32'h0000_00A5;
-        gpio_pready = 1'b1;
+        gpio_prdata  = 32'h0000_00A5;
+        gpio_pready  = 1'b1;
         gpio_pslverr = 1'b0;
 
         // Initialize UART response
-        uart_prdata = 32'h0000_0055;
-        uart_pready = 1'b1;
+        uart_prdata  = 32'h0000_0055;
+        uart_pready  = 1'b1;
         uart_pslverr = 1'b0;
 
         // Initialize Timer response
-        timer_prdata = 32'h0000_1234;
-        timer_pready = 1'b1;
+        timer_prdata  = 32'h0000_1234;
+        timer_pready  = 1'b1;
         timer_pslverr = 1'b0;
+
+        // Initialize SPI response
+        spi_prdata  = 32'h0000_003C;
+        spi_pready  = 1'b1;
+        spi_pslverr = 1'b0;
 
         #10;
 
@@ -131,7 +137,7 @@ module tb_apb_interconnect;
         m_paddr = 12'h008;
         #1;
 
-        if ({gpio_psel, uart_psel, timer_psel} !== 3'b100)
+        if ({gpio_psel, uart_psel, timer_psel, spi_psel} !== 4'b1000)
             $fatal(1, "GPIO ADDRESS DECODE FAILED");
 
         if (gpio_paddr !== 8'h08)
@@ -143,7 +149,7 @@ module tb_apb_interconnect;
         m_paddr = 12'h108;
         #1;
 
-        if ({gpio_psel, uart_psel, timer_psel} !== 3'b010)
+        if ({gpio_psel, uart_psel, timer_psel, spi_psel} !== 4'b0100)
             $fatal(1, "UART ADDRESS DECODE FAILED");
 
         if (uart_paddr !== 8'h08)
@@ -155,7 +161,7 @@ module tb_apb_interconnect;
         m_paddr = 12'h208;
         #1;
 
-        if ({gpio_psel, uart_psel, timer_psel} !== 3'b001)
+        if ({gpio_psel, uart_psel, timer_psel, spi_psel} !== 4'b0010)
             $fatal(1, "TIMER ADDRESS DECODE FAILED");
 
         if (timer_paddr !== 8'h08)
@@ -163,94 +169,118 @@ module tb_apb_interconnect;
 
         $display("TEST 3 PASSED: Timer address decoding");
 
-        // TEST 4: Read-data routing from GPIO
-        m_paddr = 12'h000;
+        // TEST 4: SPI address decoding
+        m_paddr = 12'h308;
+        #1;
+
+        if ({gpio_psel, uart_psel, timer_psel, spi_psel} !== 4'b0001)
+            $fatal(1, "SPI ADDRESS DECODE FAILED");
+
+        if (spi_paddr !== 8'h08)
+            $fatal(1, "SPI LOCAL ADDRESS FAILED");
+
+        $display("TEST 4 PASSED: SPI address decoding");
+
+        // Enable APB access phase for response tests
         m_penable = 1'b1;
+
+        // TEST 5: GPIO read-data routing
+        m_paddr = 12'h000;
         #1;
 
         if (m_prdata !== 32'h0000_00A5)
             $fatal(1, "GPIO READ DATA ROUTING FAILED");
 
-        $display("TEST 4 PASSED: GPIO read-data routing");
+        $display("TEST 5 PASSED: GPIO read-data routing");
 
-        // TEST 5: Read-data routing from UART
+        // TEST 6: UART read-data routing
         m_paddr = 12'h100;
         #1;
 
         if (m_prdata !== 32'h0000_0055)
             $fatal(1, "UART READ DATA ROUTING FAILED");
 
-        $display("TEST 5 PASSED: UART read-data routing");
+        $display("TEST 6 PASSED: UART read-data routing");
 
-        // TEST 6: Read-data routing from Timer
+        // TEST 7: Timer read-data routing
         m_paddr = 12'h200;
         #1;
 
         if (m_prdata !== 32'h0000_1234)
             $fatal(1, "TIMER READ DATA ROUTING FAILED");
 
-        $display("TEST 6 PASSED: Timer read-data routing");
+        $display("TEST 7 PASSED: Timer read-data routing");
 
-        // TEST 7: PREADY response routing
-        timer_pready = 1'b0;
+        // TEST 8: SPI read-data routing
+        m_paddr = 12'h300;
+        #1;
+
+        if (m_prdata !== 32'h0000_003C)
+            $fatal(1, "SPI READ DATA ROUTING FAILED");
+
+        $display("TEST 8 PASSED: SPI read-data routing");
+
+        // TEST 9: SPI PREADY response routing
+        spi_pready = 1'b0;
         #1;
 
         if (m_pready !== 1'b0)
-            $fatal(1, "PREADY ROUTING FAILED");
+            $fatal(1, "SPI PREADY ROUTING FAILED");
 
-        timer_pready = 1'b1;
-        $display("TEST 7 PASSED: PREADY routing");
+        spi_pready = 1'b1;
+        $display("TEST 9 PASSED: SPI PREADY routing");
 
-        // TEST 8: PSLVERR response routing
-        uart_pslverr = 1'b1;
-        m_paddr = 12'h100;
+        // TEST 10: SPI PSLVERR response routing
+        spi_pslverr = 1'b1;
         #1;
 
         if (m_pslverr !== 1'b1)
-            $fatal(1, "PSLVERR ROUTING FAILED");
+            $fatal(1, "SPI PSLVERR ROUTING FAILED");
 
-        uart_pslverr = 1'b0;
-        $display("TEST 8 PASSED: PSLVERR routing");
+        spi_pslverr = 1'b0;
+        $display("TEST 10 PASSED: SPI PSLVERR routing");
 
-        // TEST 9: Invalid address
-        m_paddr = 12'h308;
+        // TEST 11: Invalid address
+        m_paddr = 12'h408;
         #1;
 
-        if ({gpio_psel, uart_psel, timer_psel} !== 3'b000)
+        if ({gpio_psel, uart_psel, timer_psel, spi_psel} !== 4'b0000)
             $fatal(1, "INVALID ADDRESS SELECTED A PERIPHERAL");
 
         if (m_pslverr !== 1'b1)
             $fatal(1, "INVALID ADDRESS ERROR FAILED");
 
-        $display("TEST 9 PASSED: Invalid address detection");
+        $display("TEST 11 PASSED: Invalid address detection");
 
-        // TEST 10: No peripheral selection when PSEL is low
+        // TEST 12: No selection when master PSEL is low
         m_psel = 1'b0;
         #1;
 
-        if ({gpio_psel, uart_psel, timer_psel} !== 3'b000)
+        if ({gpio_psel, uart_psel, timer_psel, spi_psel} !== 4'b0000)
             $fatal(1, "PERIPHERAL SELECT ACTIVE WHEN MASTER PSEL IS LOW");
 
-        $display("TEST 10 PASSED: Master deselection");
+        $display("TEST 12 PASSED: Master deselection");
 
-        // TEST 11: Selected peripheral control signals
+        // TEST 13: SPI control and write-data routing
         m_psel = 1'b1;
         m_penable = 1'b1;
         m_pwrite = 1'b1;
-        m_paddr = 12'h108;
+        m_paddr = 12'h308;
         m_pwdata = 32'h0000_00AB;
         #1;
 
-        if (uart_penable !== 1'b1 || uart_pwrite !== 1'b1)
-            $fatal(1, "UART CONTROL SIGNAL ROUTING FAILED");
+        if (spi_penable !== 1'b1 || spi_pwrite !== 1'b1)
+            $fatal(1, "SPI CONTROL SIGNAL ROUTING FAILED");
 
-        if (gpio_penable !== 1'b0 || timer_penable !== 1'b0)
+        if (gpio_penable !== 1'b0 ||
+            uart_penable !== 1'b0 ||
+            timer_penable !== 1'b0)
             $fatal(1, "UNSELECTED PERIPHERAL RECEIVED PENABLE");
 
-        if (uart_pwdata !== 32'h0000_00AB)
-            $fatal(1, "UART WRITE DATA ROUTING FAILED");
+        if (spi_pwdata !== 32'h0000_00AB)
+            $fatal(1, "SPI WRITE DATA ROUTING FAILED");
 
-        $display("TEST 11 PASSED: Control and write-data routing");
+        $display("TEST 13 PASSED: SPI control and write-data routing");
 
         $display("----------------------------------");
         $display("ALL APB INTERCONNECT TESTS PASSED!");
@@ -261,3 +291,4 @@ module tb_apb_interconnect;
     end
 
 endmodule
+
