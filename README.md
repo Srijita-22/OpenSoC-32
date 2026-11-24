@@ -195,27 +195,47 @@ All ten reported worst maximum-delay paths had positive slack.
 | Foundry signoff DRC | Not completed |
 | LVS | Not completed |
 | Extracted-RC timing signoff | Not completed |
-| Final GDSII generation | Not completed |
+| Final GDSII generation | Passed — KLayout stream-out and read-back validation |
 
 OpenROAD routing and antenna checks are implementation-stage checks and should not be interpreted as foundry signoff DRC or LVS results.
 
-## 10. Current Project Status
+## 10. GDSII Stream-Out
 
-The integrated SoC has completed functional verification, synthesis, standard-cell mapping, clock-tree synthesis, detailed routing, antenna repair, estimated post-route timing analysis and final implementation-stage physical checks.
+The final antenna-repaired routed DEF was imported into KLayout together with the SKY130B technology LEF, standard-cell LEF and `sky130_fd_sc_hd.gds` library.
 
-Further work includes final GDSII generation, foundry signoff DRC, LVS and extracted-RC timing analysis.
+The resulting GDSII layout was written to `results/final_gds/soc_top.gds` and successfully reopened for round-trip validation.
 
-## 11. Repository Structure
+| Metric | Result |
+|---|---:|
+| Top cell | `soc_top` |
+| Cell definitions | 77 |
+| Top-level instances (including routing vias) | 22,554 |
+| Database unit | 0.001 µm |
+| GDSII file size | 2,803,978 bytes |
+| Read-back validation | Passed |
+
+The reproducible KLayout stream-out script is `scripts_streamout.rb`.
+
+**Qualification:** GDSII generation and read-back validation do not constitute foundry signoff DRC, LVS or extracted-RC timing signoff.
+
+## 11. Current Project Status
+
+The integrated SoC has completed functional verification, synthesis, standard-cell mapping, clock-tree synthesis, detailed routing, antenna repair, estimated post-route timing analysis, final implementation-stage physical checks and GDSII stream-out.
+
+Further work includes foundry signoff DRC, LVS and extracted-RC timing analysis.
+
+## 12. Repository Structure
 
 - `rtl/` — SystemVerilog RTL modules
 - `verification/` — Peripheral and full-system testbenches
 - `constraints/` — Timing constraint files
 - `scripts_*.tcl` — OpenROAD physical-design and verification scripts
+- `scripts_streamout.rb` — KLayout GDSII stream-out and read-back validation
 - `results/` — Generated synthesis and physical-design outputs (Git-ignored)
 - `reports/` — Generated implementation and verification reports (Git-ignored)
 - `README.md` — Project documentation
 
-## 12. Technology and Tools
+## 13. Technology and Tools
 
 - HDL: SystemVerilog
 - Simulation: Icarus Verilog
@@ -223,6 +243,7 @@ Further work includes final GDSII generation, foundry signoff DRC, LVS and extra
 - Synthesis: Yosys
 - Static timing analysis: OpenSTA
 - Physical implementation: OpenROAD
+- GDSII stream-out and layout inspection: KLayout
 - PDK: SKY130B
 - Standard-cell library: sky130_fd_sc_hd
 - Environment: Ubuntu 24.04 / WSL
