@@ -23,3 +23,11 @@ runs/
 *.gds
 *.lef
 results/
+
+# OpenROAD physical-design reports
+reports/
+
+# Generated physical-design database files
+*.odb
+*.guide
+*.spef
