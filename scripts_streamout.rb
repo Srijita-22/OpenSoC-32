@@ -8,10 +8,12 @@ cell_lef = File.join(ENV.fetch("PDK_ROOT"), ENV.fetch("PDK"),
   "libs.ref/sky130_fd_sc_hd/lef/sky130_fd_sc_hd.lef")
 cell_gds = File.join(ENV.fetch("PDK_ROOT"), ENV.fetch("PDK"),
   "libs.ref/sky130_fd_sc_hd/gds/sky130_fd_sc_hd.gds")
+map_file = File.join(ENV.fetch("PDK_ROOT"), ENV.fetch("PDK"),
+  "libs.tech/klayout/tech/sky130B.map")
 
 output_gds = File.expand_path("results/final_gds/soc_top.gds")
 
-[def_path, tech_lef, cell_lef, cell_gds].each do |f|
+[def_path, tech_lef, cell_lef, cell_gds, map_file].each do |f|
   raise "Missing input file: #{f}" unless File.file?(f)
 end
 
@@ -23,6 +25,7 @@ cfg = options.lefdef_config
 
 cfg.lef_files = [tech_lef, cell_lef]
 cfg.macro_layout_files = [cell_gds]
+cfg.map_file = map_file
 cfg.read_lef_with_def = true
 cfg.produce_routing = true
 cfg.produce_special_routing = true

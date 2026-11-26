@@ -195,15 +195,15 @@ All ten reported worst maximum-delay paths had positive slack.
 | Foundry signoff DRC | Not completed |
 | LVS | Not completed |
 | Extracted-RC timing signoff | Not completed |
-| Final GDSII generation | Passed — KLayout stream-out and read-back validation |
+| Final GDSII generation | Passed — KLayout stream-out, read-back and SKY130B layer-map validation |
 
 OpenROAD routing and antenna checks are implementation-stage checks and should not be interpreted as foundry signoff DRC or LVS results.
 
 ## 10. GDSII Stream-Out
 
-The final antenna-repaired routed DEF was imported into KLayout together with the SKY130B technology LEF, standard-cell LEF and `sky130_fd_sc_hd.gds` library.
+The final antenna-repaired routed DEF was imported into KLayout together with the SKY130B technology LEF, standard-cell LEF, `sky130_fd_sc_hd.gds` library and the SKY130B KLayout layer map (`sky130B.map`).
 
-The resulting GDSII layout was written to `results/final_gds/soc_top.gds` and successfully reopened for round-trip validation.
+The layer map was applied during stream-out to ensure routing geometry is written on the intended SKY130B GDS layers. The final GDSII layout was written to `results/final_gds/soc_top.gds`, successfully reopened for round-trip validation, and inspected to confirm routing geometry on met1–met5 layers (68/20 through 72/20).
 
 | Metric | Result |
 |---|---:|
@@ -211,8 +211,9 @@ The resulting GDSII layout was written to `results/final_gds/soc_top.gds` and su
 | Cell definitions | 77 |
 | Top-level instances (including routing vias) | 22,554 |
 | Database unit | 0.001 µm |
-| GDSII file size | 2,803,978 bytes |
+| GDSII file size | 2,813,840 bytes |
 | Read-back validation | Passed |
+| SKY130B routing layer mapping | Passed — met1 through met5 (68/20–72/20) |
 
 The reproducible KLayout stream-out script is `scripts_streamout.rb`.
 
